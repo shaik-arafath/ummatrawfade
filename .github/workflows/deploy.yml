@@ -1,0 +1,36 @@
+name: Deploy to VPS via Coolify
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH Key
+      uses: webfactory/ssh-agent@v0.5.6
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Add Remote Host to Known Hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H 89.116.20.32 >> ~/.ssh/known_hosts
+
+    - name: Sync files to VPS
+      run: |
+        # Create deployment directory if it doesn't exist
+        ssh root@89.116.20.32 "mkdir -p /root/rawfade"
+        
+        # Sync project files to VPS (excluding .git and node_modules)
+        rsync -avz --exclude='.git' --exclude='node_modules' --exclude='.env' ./ root@89.116.20.32:/root/rawfade/
+        
+        # Build and start services
+        ssh root@89.116.20.32 "cd /root/rawfade && docker compose down 2>/dev/null; docker compose up -d --build"
+        
+        echo "Deployment completed successfully! Coolify should now detect and manage the service."
