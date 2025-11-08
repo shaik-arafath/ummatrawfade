@@ -1,0 +1,3 @@
+SERVER_IP=89.116.20.32
+SERVER_USER=root
+DOMAIN_NAME=rawfadeclothing.com

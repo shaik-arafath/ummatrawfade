@@ -263,7 +263,7 @@
                 <li><a href="shop.html">Shop</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li><a href="login.html" class="active">Login</a></li>
-                <li><a href="cart.html"><i class="fas fa-shopping-cart"></i></a></li>
+                <li><a href="cart.html" aria-label="Cart"><i class="fas fa-shopping-cart" aria-hidden="true"></i></a></li>
             </ul>
         </nav>
     </section>
@@ -276,8 +276,8 @@
             </div>
 
             <div class="form-tabs">
-                <button class="tab-button active" onclick="switchTab('login')">Login</button>
-                <button class="tab-button" onclick="switchTab('register')">Register</button>
+                <button type="button" class="tab-button active" data-tab="login">Login</button>
+                <button type="button" class="tab-button" data-tab="register">Register</button>
             </div>
 
             <!-- Login Form -->
@@ -337,20 +337,36 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:9090/api';
+        const API_BASE_URL = 'http://localhost:8080';
 
-        function switchTab(tab) {
-            // Update tab buttons
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        // Add event listeners when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up tab switching
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tab = this.dataset.tab;
+                    // Update tab buttons
+                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
 
-            // Update form content
-            document.querySelectorAll('.form-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(tab + 'Form').classList.add('active');
+                    // Update form content
+                    document.querySelectorAll('.form-content').forEach(content => content.classList.remove('active'));
+                    document.getElementById(tab + 'Form').classList.add('active');
 
-            // Clear messages
-            clearMessages();
-        }
+                    // Clear messages
+                    clearMessages();
+                });
+            });
+
+            // Check if user is already logged in
+            const token = localStorage.getItem('token');
+            const username = localStorage.getItem('username');
+            
+            if (token && username) {
+                // User is already logged in, redirect to shop
+                window.location.href = 'shop.html';
+            }
+        });
 
         function clearMessages() {
             document.getElementById('loginMessage').textContent = '';
@@ -369,12 +385,12 @@
 
             const formData = new FormData(event.target);
             const loginData = {
-                username: formData.get('username'),
+                email: formData.get('username'),
                 password: formData.get('password')
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -382,14 +398,29 @@
                     body: JSON.stringify(loginData)
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    const ct = response.headers.get('content-type') || '';
+                    if (ct.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        const text = await response.text();
+                        data = text ? { message: text } : {};
+                    }
+                } catch (error) {
+                    const text = await response.text().catch(() => '');
+                    data = text ? { message: text } : { message: 'Invalid response from server' };
+                }
 
                 if (response.ok && data.token) {
                     // Store authentication data
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('userId', data.id);
-                    localStorage.setItem('username', data.username);
                     localStorage.setItem('email', data.email);
+                    if (data.name) {
+                        localStorage.setItem('username', data.name);
+                    } else {
+                        localStorage.removeItem('username');
+                    }
                     
                     messageEl.textContent = 'Login successful! Redirecting...';
                     messageEl.className = 'success-message';
@@ -427,17 +458,14 @@
 
             const formData = new FormData(event.target);
             const registerData = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                username: formData.get('username'),
                 email: formData.get('email'),
-                phoneNumber: formData.get('phoneNumber'),
-                address: formData.get('address'),
-                password: formData.get('password')
+                password: formData.get('password'),
+                name: `${formData.get('firstName')} ${formData.get('lastName')}`.trim()
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                console.log('Attempting to register with:', API_BASE_URL);
+                const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -445,7 +473,20 @@
                     body: JSON.stringify(registerData)
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    const ct = response.headers.get('content-type') || '';
+                    if (ct.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        const text = await response.text();
+                        data = text ? { message: text } : {};
+                    }
+                } catch (error) {
+                    console.error('Error parsing response:', error);
+                    const text = await response.text().catch(() => '');
+                    data = text ? { message: text } : { message: 'Invalid response from server' };
+                }
 
                 if (response.ok) {
                     messageEl.textContent = 'Account created successfully! Please login.';
@@ -453,8 +494,8 @@
                     
                     // Switch to login tab after successful registration
                     setTimeout(() => {
-                        switchTab('login');
-                        document.getElementById('loginUsername').value = registerData.username;
+                        document.querySelector('.tab-button[data-tab="login"]').click();
+                        document.getElementById('loginUsername').value = registerData.email;
                     }, 2000);
                 } else {
                     messageEl.textContent = data.message || 'Registration failed. Please try again.';

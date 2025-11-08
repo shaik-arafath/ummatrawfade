@@ -395,12 +395,11 @@
             }
 
             // Add to cart functionality
-            function addToCart() {
+            async function addToCart() {
                 const token = localStorage.getItem('token');
                 const username = localStorage.getItem('username');
                 
                 if (!token || !username) {
-                    // Store current page for redirect after login
                     localStorage.setItem('redirectAfterLogin', window.location.href);
                     alert('Please login to add items to cart');
                     window.location.href = 'login.html';
@@ -420,86 +419,150 @@
                     return;
                 }
                 
-                // Get product ID from URL or use default
-                const productId = getProductIdFromUrl() || 1;
-                
-                // Add to cart using backend API
-                addToCartAPI(productId, quantity, username, token);
-            }
-
-            async function addToCartAPI(productId, quantity, username, token) {
-                const API_BASE_URL = 'http://localhost:9090/api';
-                
-                console.log('=== DEBUG: Adding to cart ===');
-                console.log('Product ID:', productId);
-                console.log('Quantity:', quantity);
-                console.log('Username:', username);
-                console.log('Token:', token ? 'Present' : 'Missing');
-                console.log('API URL:', `${API_BASE_URL}/cart/user/${username}/add?productId=${productId}&quantity=${quantity}`);
+                const productId = Number(getProductIdFromUrl() || 1);
                 
                 try {
-                    console.log('Making API request...');
-                    const response = await fetch(`${API_BASE_URL}/cart/user/${username}/add?productId=${productId}&quantity=${quantity}`, {
+                    // Try backend API first
+                    const response = await fetch(`http://localhost:8080/api/cart/add`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
-                        }
+                        },
+                        body: JSON.stringify({ productId: Number(productId), quantity: Number(quantity) })
                     });
-                    
-                    console.log('Response status:', response.status);
-                    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                    
-                    if (response.ok) {
-                        const cart = await response.json();
-                        console.log('SUCCESS: Cart updated:', cart);
-                        alert('Product added to cart successfully!');
-                    } else if (response.status === 401) {
-                        console.log('ERROR: Unauthorized - clearing auth data');
+
+                    if (response.status === 401) {
+                        // Token expired or invalid, logout user
+                        console.warn('Token expired, logging out user');
                         localStorage.removeItem('token');
-                        localStorage.removeItem('userId');
                         localStorage.removeItem('username');
-                        localStorage.removeItem('email');
-                        alert('Session expired. Please login again.');
+                        alert('Your session has expired. Please login again.');
                         window.location.href = 'login.html';
-                    } else {
-                        const errorData = await response.text();
-                        console.error('ERROR: Server error:', response.status, errorData);
-                        alert(`Error adding product to cart: ${response.status} - ${errorData}`);
-                    }
-                } catch (error) {
-                    console.error('ERROR: Network error:', error);
-                    console.error('Error details:', error.message);
-                    
-                    // Check if backend is running
-                    try {
-                        const healthCheck = await fetch(`${API_BASE_URL}/actuator/health`);
-                        console.log('Backend health check:', healthCheck.status);
-                    } catch (healthError) {
-                        console.error('Backend appears to be down:', healthError.message);
-                        alert('Backend server is not running. Please start the Spring Boot application first.\n\nRun: mvn spring-boot:run');
                         return;
                     }
-                    
-                    alert('Network error. Check console for details.');
+
+                    if (response.ok) {
+                        alert('Product added to cart successfully!');
+                        return;
+                    } else if (response.status === 404) {
+                        console.log('Backend API returned 404 error');
+                    } else {
+                        console.log('Backend API returned error:', response.status);
+                    }
+                } catch (error) {
+                    console.log('Backend API not available, using localStorage fallback:', error.message);
                 }
+
+                // Fallback to localStorage
+                const cartKey = `cart_${username}`;
+                let cartData = JSON.parse(localStorage.getItem(cartKey)) || [];
+                
+                // Ensure cart is always an array (handle old format)
+                let cart = Array.isArray(cartData) ? cartData : (cartData.items || []);
+                
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                } else {
+                    // Get product details with error handling
+                    const nameElement = document.querySelector('.single-pro-details h4');
+                    const priceElement = document.querySelector('.single-pro-details span:last-of-type');
+                    const imageElement = document.getElementById('MainImg');
+                    
+                    const productName = nameElement ? nameElement.textContent : `Product ${productId}`;
+                    const productPrice = priceElement ? parseFloat(priceElement.textContent.replace('$', '')) : 0;
+                    const productImage = imageElement ? imageElement.src : '';
+                    
+                    cart.push({
+                        id: productId,
+                        name: productName,
+                        price: productPrice,
+                        image: productImage,
+                        quantity: quantity,
+                        size: size,
+                        addedAt: new Date().toISOString()
+                    });
+                }
+                
+                localStorage.setItem(cartKey, JSON.stringify(cart));
+                alert('Product added to cart successfully!');
             }
 
             // Add to cart for related products
-            function addRelatedProductToCart(productId) {
+            async function addRelatedProductToCart(productId) {
                 const token = localStorage.getItem('token');
                 const username = localStorage.getItem('username');
                 
                 if (!token || !username) {
-                    // Store current page for redirect after login
                     localStorage.setItem('redirectAfterLogin', window.location.href);
                     alert('Please login to add items to cart');
                     window.location.href = 'login.html';
                     return;
                 }
+
+                try {
+                    // Try backend API first
+                    const response = await fetch(`http://localhost:8080/api/cart/add`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ productId: Number(productId), quantity: 1 })
+                    });
+
+                    if (response.status === 401) {
+                        // Token expired or invalid, logout user
+                        console.warn('Token expired, logging out user');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('username');
+                        alert('Your session has expired. Please login again.');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    if (response.ok) {
+                        alert('Product added to cart successfully!');
+                        return;
+                    } else if (response.status === 404) {
+                        console.log('Backend API returned 404 error');
+                    } else {
+                        console.log('Backend API returned error:', response.status);
+                    }
+                } catch (error) {
+                    console.log('Backend API not available, using localStorage fallback:', error.message);
+                }
+
+                // Fallback to localStorage
+                const cartKey = `cart_${username}`;
+                let cartData = JSON.parse(localStorage.getItem(cartKey)) || [];
                 
-                // Add to cart using backend API
-                addToCartAPI(productId, 1, username, token);
+                // Ensure cart is always an array (handle old format)
+                let cart = Array.isArray(cartData) ? cartData : (cartData.items || []);
+                
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    // Get product details from the related product element
+                    const productElement = document.querySelector(`[data-product-id="${productId}"]`);
+                    const productName = productElement.querySelector('h5').textContent;
+                    const productPrice = parseFloat(productElement.querySelector('.des span:last-of-type').textContent.replace('$', ''));
+                    const productImage = productElement.querySelector('img').src;
+                    
+                    cart.push({
+                        id: productId,
+                        name: productName,
+                        price: productPrice,
+                        image: productImage,
+                        quantity: 1,
+                        addedAt: new Date().toISOString()
+                    });
+                }
+                
+                localStorage.setItem(cartKey, JSON.stringify(cart));
+                alert('Product added to cart successfully!');
             }
 
             // Update auth link based on login status

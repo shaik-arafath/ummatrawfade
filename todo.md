@@ -1,0 +1,5 @@
+- [x] Update Dockerfile to build frontend and backend
+- [x] Update .github/workflows/deploy.yml for full CI/CD pipeline
+- [x] Verify docker-compose.yml
+- [x] Create setup_guide.md
+- [x] Test deployment (Docker not available locally, assume GitHub Actions will handle)

@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAW FADE - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f8fafc;
+            --sidebar-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body { background: var(--bg); color: var(--text); }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            color: white;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            display: block;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border-right: 3px solid #3b82f6;
+        }
+
+        .menu-item i {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--text);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Tables */
+        .table-container {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Image Upload */
+        .image-upload {
+            border: 2px dashed var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .image-upload:hover {
+            border-color: var(--primary);
+        }
+
+        .image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.active {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-badge.inactive {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: var(--warning);
+            color: white;
+        }
+
+        .status-badge.completed {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-badge.cancelled {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Banner Grid */
+        .banner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .banner-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .banner-item label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Section Divider */
+        .section-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 30px 0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>RAW FADE</h2>
+            <p>Admin Panel</p>
+        </div>
+        <nav class="sidebar-menu">
+            <button class="menu-item active" onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </button>
+            <button class="menu-item" onclick="showSection('products')">
+                <i class="fas fa-box"></i> Products
+            </button>
+            <button class="menu-item" onclick="showSection('orders')">
+                <i class="fas fa-shopping-cart"></i> Orders
+            </button>
+            <button class="menu-item" onclick="showSection('banners')">
+                <i class="fas fa-image"></i> Banners & Hero
+            </button>
+            <button class="menu-item" onclick="showSection('homepage')">
+                <i class="fas fa-home"></i> Homepage Content
+            </button>
+            <button class="menu-item" onclick="showSection('shop-page')">
+                <i class="fas fa-store"></i> Shop Page
+            </button>
+            <button class="menu-item" onclick="showSection('categories')">
+                <i class="fas fa-tags"></i> Categories
+            </button>
+            <button class="menu-item" onclick="showSection('brands')">
+                <i class="fas fa-trademark"></i> Brands
+            </button>
+            <button class="menu-item" onclick="showSection('settings')">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="user-info">
+                <span id="adminUsername">Admin</span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h2>Dashboard Overview</h2>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="number" id="totalProducts">25</div>
+                    <div class="label">Total Products</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="number" id="totalCustomers">150</div>
+                    <div class="label">Total Customers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="number" id="totalOrders">89</div>
+                    <div class="label">Total Orders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="number" id="totalRevenue">$12,450</div>
+                    <div class="label">Total Revenue</div>
+                </div>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 15px; margin-top: 20px;">
+                <h3>Recent Activity</h3>
+                <ul>
+                    <li>New order #1234 placed by John Doe</li>
+                    <li>Product "Classic T-Shirt" updated</li>
+                    <li>New user registration: jane@example.com</li>
+                    <li>Order #1230 shipped</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div id="products" class="content-section">
+            <div class="section-header">
+                <h2>Product Management</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" onclick="openProductModal()">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                    <button class="btn-primary" onclick="openBulkModal()">
+                        <i class="fas fa-tasks"></i> Bulk Actions
+                    </button>
+                    <button class="btn-primary" onclick="exportProducts()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <input type="text" class="search-bar" placeholder="Search products..." onkeyup="searchProducts(this.value)" style="flex: 1; min-width: 250px;">
+                <select id="categoryFilter" onchange="filterProducts(this.value)" style="padding: 12px; border-radius: 25px; border: 2px solid #e0e0e0;">
+                    <option value="">All Categories</option>
+                    <option value="tshirts">T-Shirts</option>
+                    <option value="shirts">Shirts</option>
+                    <option value="jeans">Jeans</option>
+                    <option value="shorts">Shorts</option>
+                    <option value="jackets">Jackets</option>
+                </select>
+                <select id="statusFilter" onchange="filterProducts(this.value)" style="padding: 12px; border-radius: 25px; border: 2px solid #e0e0e0;">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            
+            <table class="data-table" id="productsTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAllProducts" onchange="toggleSelectAll('products')"></th>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                    <tr>
+                        <td><input type="checkbox" class="product-checkbox" value="1"></td>
+                        <td><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K" alt="Product" class="image-preview"></td>
+                        <td>Classic T-Shirt</td>
+                        <td>T-Shirts</td>
+                        <td>$29.99</td>
+                        <td>50</td>
+                        <td><span class="status-badge active">Active</span></td>
+                        <td>
+                            <button class="btn-edit" onclick="editProduct(1)">Edit</button>
+                            <button class="btn-delete" onclick="deleteProduct(1)">Delete</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="product-checkbox" value="2"></td>
+                        <td><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K" alt="Product" class="image-preview"></td>
+                        <td>Denim Jeans</td>
+                        <td>Jeans</td>
+                        <td>$79.99</td>
+                        <td>25</td>
+                        <td><span class="status-badge active">Active</span></td>
+                        <td>
+                            <button class="btn-edit" onclick="editProduct(2)">Edit</button>
+                            <button class="btn-delete" onclick="deleteProduct(2)">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Users Section -->
+        <div id="users" class="content-section">
+            <div class="section-header">
+                <h2>User Management</h2>
+            </div>
+            
+            <input type="text" class="search-bar" placeholder="Search users..." onkeyup="searchUsers(this.value)">
+            
+            <table class="data-table" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td>1</td>
+                        <td>john_doe</td>
+                        <td>john@example.com</td>
+                        <td>ROLE_USER</td>
+                        <td><span class="status-badge active">Active</span></td>
+                        <td>2024-01-15</td>
+                        <td>
+                            <button class="btn-edit" onclick="openUserModal(1)">Edit</button>
+                            <button class="btn-delete" onclick="deleteUser(1)">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Orders Section -->
+        <div id="orders" class="content-section">
+            <div class="section-header">
+                <h2>Order Management</h2>
+                <div>
+                    <select class="form-control" style="width: auto; display: inline-block; margin-right: 10px;" onchange="filterOrders(this.value)">
+                        <option value="all">All Orders</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadOrdersTable()">Refresh</button>
+                </div>
+            </div>
+            <input type="text" class="form-control" placeholder="Search orders..." onkeyup="searchOrders(this.value)" style="margin: 20px; width: calc(100% - 40px);">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div id="categories" class="content-section">
+            <div class="section-header">
+                <h2>Category Management</h2>
+                <button class="btn btn-primary" onclick="openCategoryModal()">
+                    <i class="fas fa-plus"></i> Add Category
+                </button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Icon</th>
+                            <th>Name</th>
+                            <th>Slug</th>
+                            <th>Products</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Brands Section -->
+        <div id="brands" class="content-section">
+            <div class="section-header">
+                <h2>Brand Management</h2>
+                <button class="btn btn-primary" onclick="openBrandModal()">
+                    <i class="fas fa-plus"></i> Add Brand
+                </button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Logo</th>
+                            <th>Name</th>
+                            <th>Products</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brandsTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Banners & Hero Section -->
+        <div id="banners" class="content-section">
+            <div class="section-header">
+                <h2>Banner & Hero Management</h2>
+                <button class="btn btn-primary" onclick="saveBannerSettings()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="heroTitle">Hero Title</label>
+                    <input type="text" id="heroTitle" class="form-control" placeholder="Enter hero title">
+                </div>
+                
+                <div class="form-group">
+                    <label for="heroSubtitle">Hero Subtitle</label>
+                    <input type="text" id="heroSubtitle" class="form-control" placeholder="Enter hero subtitle">
+                </div>
+                
+                <div class="form-group">
+                    <label for="heroButtonText">Hero Button Text</label>
+                    <input type="text" id="heroButtonText" class="form-control" placeholder="Enter button text">
+                </div>
+                
+                <div class="form-group">
+                    <label for="heroButtonLink">Hero Button Link</label>
+                    <input type="text" id="heroButtonLink" class="form-control" placeholder="Enter button link">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="heroBackgroundImage">Hero Background Image URL</label>
+                    <input type="url" id="heroBackgroundImage" class="form-control" placeholder="Enter background image URL">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="heroDescription">Hero Description</label>
+                    <textarea id="heroDescription" class="form-control" rows="3" placeholder="Enter hero description"></textarea>
+                </div>
+            </div>
+            
+            <div class="section-divider"></div>
+            
+            <h3>Banner Images</h3>
+            <div class="banner-grid">
+                <div class="banner-item">
+                    <label>Banner 1</label>
+                    <input type="url" id="banner1" class="form-control" placeholder="Banner 1 URL">
+                </div>
+                <div class="banner-item">
+                    <label>Banner 2</label>
+                    <input type="url" id="banner2" class="form-control" placeholder="Banner 2 URL">
+                </div>
+                <div class="banner-item">
+                    <label>Banner 3</label>
+                    <input type="url" id="banner3" class="form-control" placeholder="Banner 3 URL">
+                </div>
+                <div class="banner-item">
+                    <label>Banner 4</label>
+                    <input type="url" id="banner4" class="form-control" placeholder="Banner 4 URL">
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings" class="content-section">
+            <div class="section-header">
+                <h2>Website Settings</h2>
+                <button class="btn btn-primary" onclick="saveWebsiteSettings()">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="websiteName">Website Name</label>
+                    <input type="text" id="websiteName" class="form-control" placeholder="Enter website name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="websiteTagline">Website Tagline</label>
+                    <input type="text" id="websiteTagline" class="form-control" placeholder="Enter website tagline">
+                </div>
+                
+                <div class="form-group">
+                    <label for="contactEmail">Contact Email</label>
+                    <input type="email" id="contactEmail" class="form-control" placeholder="Enter contact email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="contactPhone">Contact Phone</label>
+                    <input type="tel" id="contactPhone" class="form-control" placeholder="Enter contact phone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="currencySymbol">Currency Symbol</label>
+                    <select id="currencySymbol" class="form-control">
+                        <option value="₹">₹ (Indian Rupee)</option>
+                        <option value="$">$ (US Dollar)</option>
+                        <option value="€">€ (Euro)</option>
+                        <option value="£">£ (British Pound)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="deliveryTime">Standard Delivery Time</label>
+                    <select id="deliveryTime" class="form-control">
+                        <option value="3-5">3-5 Business Days</option>
+                        <option value="5-7">5-7 Business Days</option>
+                        <option value="7-10">7-10 Business Days</option>
+                        <option value="express">Express (1-2 Days)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="websiteAddress">Business Address</label>
+                    <textarea id="websiteAddress" class="form-control" rows="3" placeholder="Enter business address"></textarea>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="websiteDescription">Website Description</label>
+                    <textarea id="websiteDescription" class="form-control" rows="3" placeholder="Enter website description"></textarea>
+                </div>
+            </div>
+            
+            <div class="section-divider"></div>
+            
+            <h3>Social Media Links</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="facebookUrl">Facebook URL</label>
+                    <input type="url" id="facebookUrl" class="form-control" placeholder="https://facebook.com/yourpage">
+                </div>
+                
+                <div class="form-group">
+                    <label for="instagramUrl">Instagram URL</label>
+                    <input type="url" id="instagramUrl" class="form-control" placeholder="https://instagram.com/yourpage">
+                </div>
+                
+                <div class="form-group">
+                    <label for="twitterUrl">Twitter URL</label>
+                    <input type="url" id="twitterUrl" class="form-control" placeholder="https://twitter.com/yourpage">
+                </div>
+                
+                <div class="form-group">
+                    <label for="youtubeUrl">YouTube URL</label>
+                    <input type="url" id="youtubeUrl" class="form-control" placeholder="https://youtube.com/yourchannel">
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Modal -->
+        <div id="productModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeProductModal()">&times;</span>
+                <h2 id="productModalTitle">Add Product</h2>
+                <form id="productForm">
+                    <input type="hidden" id="productId" name="id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="productName">Product Name *</label>
+                            <input type="text" id="productName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productCategory">Category *</label>
+                            <select id="productCategory" name="category" required>
+                                <option value="">Select Category</option>
+                                <option value="tshirts">T-Shirts</option>
+                                <option value="shirts">Shirts</option>
+                                <option value="jeans">Jeans</option>
+                                <option value="shorts">Shorts</option>
+                                <option value="jackets">Jackets</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="productPrice">Price ($) *</label>
+                            <input type="number" id="productPrice" name="price" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productStock">Stock Quantity *</label>
+                            <input type="number" id="productStock" name="stock" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="productDescription">Description</label>
+                        <textarea id="productDescription" name="description" rows="4" placeholder="Product description..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="productImage">Image URL</label>
+                        <input type="url" id="productImage" name="imageUrl" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="productStatus">Status</label>
+                        <select id="productStatus" name="status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn-primary">Save Product</button>
+                        <button type="button" class="btn-secondary" onclick="closeProductModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- User Modal -->
+        <div id="userModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeUserModal()">&times;</span>
+                <h2 id="userModalTitle">Edit User</h2>
+                <form id="userForm">
+                    <input type="hidden" id="userId" name="id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="userUsername">Username *</label>
+                            <input type="text" id="userUsername" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="userEmail">Email *</label>
+                            <input type="email" id="userEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="userFirstName">First Name</label>
+                            <input type="text" id="userFirstName" name="firstName">
+                        </div>
+                        <div class="form-group">
+                            <label for="userLastName">Last Name</label>
+                            <input type="text" id="userLastName" name="lastName">
+                        </div>
+                        <div class="form-group">
+                            <label for="userPhone">Phone Number</label>
+                            <input type="tel" id="userPhone" name="phoneNumber">
+                        </div>
+                        <div class="form-group">
+                            <label for="userAddress">Address</label>
+                            <input type="text" id="userAddress" name="address">
+                        </div>
+                        <div class="form-group">
+                            <label for="userRole">Role</label>
+                            <select id="userRole" name="role">
+                                <option value="ROLE_USER">User</option>
+                                <option value="ROLE_ADMIN">Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="userStatus">Status</label>
+                            <select id="userStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="banned">Banned</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn-primary">Update User</button>
+                        <button type="button" class="btn-secondary" onclick="closeUserModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Order Modal -->
+        <div id="orderModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeOrderModal()">&times;</span>
+                <h2 id="orderModalTitle">Order Details</h2>
+                <div id="orderDetails">
+                    <!-- Order details will be loaded here -->
+                </div>
+                <div style="margin-top: 20px;">
+                    <label for="orderStatusSelect">Update Status:</label>
+                    <select id="orderStatusSelect" style="margin: 10px 0; padding: 8px; width: 200px;">
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn-primary" onclick="updateOrderStatus()">Update Status</button>
+                        <button class="btn-secondary" onclick="closeOrderModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Management Modal -->
+        <div id="categoryModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeCategoryModal()">&times;</span>
+                <h2>Manage Categories</h2>
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="newCategoryName" placeholder="New category name..." style="padding: 10px; width: 70%; margin-right: 10px;">
+                    <button class="btn-primary" onclick="addCategory()">Add Category</button>
+                </div>
+                <div id="categoriesList">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Modal -->
+        <div id="bulkModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeBulkModal()">&times;</span>
+                <h2>Bulk Actions</h2>
+                <div class="form-group">
+                    <label>Select Action:</label>
+                    <select id="bulkAction" style="width: 100%; padding: 10px; margin: 10px 0;">
+                        <option value="">Choose action...</option>
+                        <option value="activate">Activate Selected</option>
+                        <option value="deactivate">Deactivate Selected</option>
+                        <option value="delete">Delete Selected</option>
+                        <option value="updateCategory">Update Category</option>
+                        <option value="updatePrice">Update Price</option>
+                    </select>
+                </div>
+                <div id="bulkActionDetails" style="display: none;">
+                    <!-- Additional fields for bulk actions -->
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn-primary" onclick="executeBulkAction()">Execute</button>
+                    <button class="btn-secondary" onclick="closeBulkModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        // Global variables
+        let currentEditId = null;
+        let productData = JSON.parse(localStorage.getItem('adminProductData')) || [
+            {id: 1, name: "Grey-Trotan", category: "tshirts", brand: "RAW FADE", price: 599, originalPrice: 1199, stock: 50, status: "active", imageUrl: "img/products/c1-1.png", description: "Premium quality grey t-shirt"},
+            {id: 2, name: "Premium Jeans", category: "jeans", brand: "RAW FADE", price: 1499, originalPrice: 2999, stock: 30, status: "active", imageUrl: "img/products/c2-1.png", description: "High-quality denim jeans"},
+            {id: 3, name: "Stylish Jacket", category: "jackets", brand: "RAW FADE", price: 2299, originalPrice: 4599, stock: 20, status: "active", imageUrl: "img/products/c3-1.png", description: "Trendy jacket"},
+            {id: 4, name: "Black Polo", category: "shirts", brand: "RAW FADE", price: 799, originalPrice: 1599, stock: 40, status: "active", imageUrl: "img/products/c4-1.png", description: "Classic black polo shirt"}
+        ];
+        let orderData = JSON.parse(localStorage.getItem('adminOrderData')) || [];
+        let cartData = JSON.parse(localStorage.getItem('adminCartData')) || [];
+
+        // Initialize admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadRealCartData();
+            loadProductsTable();
+            loadOrdersTable();
+            loadCategoriesTable();
+            loadBrandsTable();
+            loadBannerSettings();
+            loadHomepageContent();
+            loadShopPageSettings();
+            loadWebsiteSettings();
+            updateDashboardStats();
+        });
+
+        // Authentication check
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const username = localStorage.getItem('username');
+            
+            if (!token || !username) {
+                alert('Please login first');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            document.getElementById('adminUsername').textContent = username;
+            return true;
+        }
+
+        // Navigation functions
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+            
+            const titles = {
+                'dashboard': 'Dashboard',
+                'products': 'Product Management',
+                'orders': 'Order Management',
+                'banners': 'Banner Management',
+                'homepage': 'Homepage Content',
+                'shop-page': 'Shop Page Management',
+                'categories': 'Category Management',
+                'brands': 'Brand Management',
+                'settings': 'Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[sectionId] || 'Admin Panel';
+        }
+
+        // Load real cart data
+        function loadRealCartData() {
+            const allCartData = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('cart_')) {
+                    try {
+                        const userData = JSON.parse(localStorage.getItem(key));
+                        if (userData && userData.items && userData.items.length > 0) {
+                            allCartData.push({
+                                username: key.replace('cart_', ''),
+                                items: userData.items,
+                                timestamp: userData.timestamp || new Date().toISOString()
+                            });
+                        }
+                    } catch (e) {
+                        console.log('Error parsing cart data for', key, e);
+                    }
+                }
+            }
+            
+            cartData = allCartData;
+            
+            // Load and sanitize existing admin data
+            const existingProducts = JSON.parse(localStorage.getItem('adminProductData') || '[]');
+            
+            // Sanitize product data - fix any placeholder.jpg references
+            existingProducts.forEach(product => {
+                if (product.imageUrl === 'img/placeholder.jpg' || product.image === 'img/placeholder.jpg' || 
+                    product.imageUrl === 'placeholder.jpg' || product.image === 'placeholder.jpg' ||
+                    !product.imageUrl || product.imageUrl === 'undefined') {
+                    product.imageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K';
+                    product.image = product.imageUrl;
+                }
+            });
+            
+            // Set sanitized product data
+            productData = existingProducts;
+            
+            // Convert cart items to orders
+            orderData = [];
+            let orderId = 1000;
+            
+            cartData.forEach(userCart => {
+                if (userCart.items && userCart.items.length > 0) {
+                    userCart.items.forEach(item => {
+                        let product = productData.find(p => p.id == item.productId);
+                        if (!product) {
+                            product = {
+                                id: item.productId,
+                                name: `Product ${item.productId}`,
+                                category: "unknown",
+                                brand: "Unknown",
+                                price: 999,
+                                stock: 0,
+                                status: "active",
+                                imageUrl: "img/placeholder.jpg",
+                                description: `Product with ID ${item.productId}`
+                            };
+                            productData.push(product);
+                        }
+                        
+                        orderData.push({
+                            id: orderId++,
+                            customer: userCart.username,
+                            productName: product.name,
+                            productId: item.productId,
+                            quantity: item.quantity || 1,
+                            price: product.price,
+                            total: (product.price * (item.quantity || 1)),
+                            status: 'pending',
+                            date: new Date(userCart.timestamp).toLocaleDateString() || new Date().toLocaleDateString(),
+                            category: product.category
+                        });
+                    });
+                }
+            });
+            
+            saveToLocalStorage();
+        }
+
+        // Save data to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('adminProductData', JSON.stringify(productData));
+            localStorage.setItem('adminOrderData', JSON.stringify(orderData));
+            localStorage.setItem('adminCartData', JSON.stringify(cartData));
+        }
+
+        // Update dashboard statistics
+        function updateDashboardStats() {
+            document.getElementById('totalProducts').textContent = productData.length;
+            document.getElementById('totalCustomers').textContent = cartData.length;
+            document.getElementById('totalOrders').textContent = orderData.length;
+            
+            const totalRevenue = orderData.reduce((sum, order) => sum + order.total, 0);
+            document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toLocaleString()}`;
+        }
+
+        // Load products table
+        function loadProductsTable() {
+            const tbody = document.getElementById('productsTable');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (productData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No products found. Add products to see them here.</td></tr>';
+                return;
+            }
+            
+            productData.forEach(product => {
+                const row = document.createElement('tr');
+                const imageUrl = product.imageUrl || product.image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K';
+                
+                row.innerHTML = `
+                    <td><img src="${imageUrl}" alt="${product.name || 'Product'}" class="image-preview" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'"></td>
+                    <td>${product.name || 'Unnamed Product'}</td>
+                    <td>${product.brand || 'No Brand'}</td>
+                    <td>${product.category || 'Uncategorized'}</td>
+                    <td>₹${product.price || 0}</td>
+                    <td>${product.stock || 0}</td>
+                    <td><span class="status-badge ${product.status || 'inactive'}">${product.status || 'inactive'}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="openProductModal(${product.id})" style="margin-right: 5px;">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load orders table
+        function loadOrdersTable() {
+            const tbody = document.getElementById('ordersTable');
+            const recentTbody = document.getElementById('recentOrdersTable');
+            
+            if (!tbody) {
+                console.error('ordersTable element not found');
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            if (recentTbody) {
+                recentTbody.innerHTML = '';
+            }
+            
+            if (orderData.length === 0) {
+                const noOrdersRow = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No orders found. Orders will appear here when customers add products to cart.</td></tr>';
+                tbody.innerHTML = noOrdersRow;
+                if (recentTbody) {
+                    recentTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No orders yet.</td></tr>';
+                }
+                return;
+            }
+            
+            // Load all orders
+            orderData.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.productName}</td>
+                    <td>${order.quantity}</td>
+                    <td>₹${order.total}</td>
+                    <td><span class="status-badge ${order.status}">${order.status}</span></td>
+                    <td>${order.date}</td>
+                    <td>
+                        <button class="btn btn-success" onclick="updateOrderStatus(${order.id}, 'completed')" style="margin-right: 5px;">Complete</button>
+                        <button class="btn btn-danger" onclick="updateOrderStatus(${order.id}, 'cancelled')">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Load recent orders (last 5) if element exists
+            if (recentTbody) {
+                const recentOrders = orderData.slice(-5);
+                recentOrders.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>#${order.id}</td>
+                        <td>${order.customer}</td>
+                        <td>${order.productName}</td>
+                        <td>₹${order.total}</td>
+                        <td><span class="status-badge ${order.status}">${order.status}</span></td>
+                        <td>${order.date}</td>
+                    `;
+                    recentTbody.appendChild(row);
+                });
+            }
+        }
+
+        // Filter orders function
+        function filterOrders(status) {
+            const tbody = document.getElementById('ordersTable');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            let filteredOrders = orderData;
+            if (status !== 'all') {
+                filteredOrders = orderData.filter(order => order.status === status);
+            }
+            
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No orders found for this filter.</td></tr>';
+                return;
+            }
+            
+            filteredOrders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.productName}</td>
+                    <td>${order.quantity}</td>
+                    <td>₹${order.total}</td>
+                    <td><span class="status-badge ${order.status}">${order.status}</span></td>
+                    <td>${order.date}</td>
+                    <td>
+                        <button class="btn btn-success" onclick="updateOrderStatus(${order.id}, 'completed')" style="margin-right: 5px;">Complete</button>
+                        <button class="btn btn-danger" onclick="updateOrderStatus(${order.id}, 'cancelled')">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Search orders function
+        function searchOrders(searchTerm) {
+            const tbody = document.getElementById('ordersTable');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            const filteredOrders = orderData.filter(order => 
+                order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.id.toString().includes(searchTerm)
+            );
+            
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No orders found matching your search.</td></tr>';
+                return;
+            }
+            
+            filteredOrders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.productName}</td>
+                    <td>${order.quantity}</td>
+                    <td>₹${order.total}</td>
+                    <td><span class="status-badge ${order.status}">${order.status}</span></td>
+                    <td>${order.date}</td>
+                    <td>
+                        <button class="btn btn-success" onclick="updateOrderStatus(${order.id}, 'completed')" style="margin-right: 5px;">Complete</button>
+                        <button class="btn btn-danger" onclick="updateOrderStatus(${order.id}, 'cancelled')">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Navigation functions
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all menu items
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // Add active class to clicked menu item
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'products': 'Product Management',
+                'orders': 'Order Management',
+                'banners': 'Banner Management',
+                'homepage': 'Homepage Content',
+                'shop-page': 'Shop Page Management',
+                'categories': 'Category Management',
+                'brands': 'Brand Management',
+                'settings': 'Settings'
+            };
+            const titleElement = document.getElementById('pageTitle');
+            if (titleElement) {
+                titleElement.textContent = titles[sectionId] || 'Admin Panel';
+            }
+        }
+
+        // Product management functions
+        function openProductModal(productId = null) {
+            currentEditId = productId;
+            const modal = document.getElementById('productModal');
+            const title = document.getElementById('productModalTitle');
+            
+            if (productId) {
+                title.textContent = 'Edit Product';
+                const product = productData.find(p => p.id === productId);
+                if (product) {
+                    document.getElementById('productName').value = product.name;
+                    document.getElementById('productBrand').value = product.brand;
+                    document.getElementById('productCategory').value = product.category;
+                    document.getElementById('originalPrice').value = product.originalPrice || product.price;
+                    document.getElementById('discountPrice').value = product.price;
+                    document.getElementById('productStock').value = product.stock;
+                    document.getElementById('productDescription').value = product.description;
+                    document.getElementById('productImageUrl').value = product.imageUrl;
+                }
+            } else {
+                title.textContent = 'Add Product';
+                document.getElementById('productForm').reset();
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        // Handle product form submission
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const productData_new = {
+                name: document.getElementById('productName').value,
+                brand: document.getElementById('productBrand').value,
+                category: document.getElementById('productCategory').value,
+                originalPrice: parseInt(document.getElementById('originalPrice').value),
+                price: parseInt(document.getElementById('discountPrice').value),
+                stock: parseInt(document.getElementById('productStock').value),
+                description: document.getElementById('productDescription').value,
+                imageUrl: document.getElementById('productImageUrl').value || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K',
+                status: 'active'
+            };
+            
+            if (currentEditId) {
+                const index = productData.findIndex(p => p.id === currentEditId);
+                if (index !== -1) {
+                    productData[index] = { ...productData[index], ...productData_new };
+                }
+            } else {
+                const newId = Math.max(...productData.map(p => p.id), 0) + 1;
+                productData.push({ id: newId, ...productData_new });
+            }
+            
+            saveToLocalStorage();
+            loadProductsTable();
+            updateDashboardStats();
+            closeProductModal();
+            alert('Product saved successfully!');
+        });
+
+        function editProduct(id) {
+            openProductModal(id);
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                productData = productData.filter(p => p.id !== id);
+                saveToLocalStorage();
+                loadProductsTable();
+                updateDashboardStats();
+                alert('Product deleted successfully!');
+            }
+        }
+
+        // Order management functions
+        function updateOrderStatus(orderId, status) {
+            const order = orderData.find(o => o.id === orderId);
+            if (order) {
+                order.status = status;
+                saveToLocalStorage();
+                loadOrdersTable();
+                alert(`Order #${orderId} status updated to ${status}!`);
+            }
+        }
+
+        // Content management functions
+        function updateHeroSection() {
+            const heroData = {
+                title: document.getElementById('heroTitle').value,
+                subtitle: document.getElementById('heroSubtitle').value,
+                primaryBtn: document.getElementById('heroPrimaryBtn').value,
+                secondaryBtn: document.getElementById('heroSecondaryBtn').value
+            };
+            
+            localStorage.setItem('heroContent', JSON.stringify(heroData));
+            alert('Hero section updated successfully!');
+        }
+
+        function updateHomepageContent() {
+            const homepageData = {
+                newArrivalsTitle: document.getElementById('newArrivalsTitle').value,
+                featuredTitle: document.getElementById('featuredTitle').value,
+                categoriesTitle: document.getElementById('categoriesTitle').value,
+                aboutTitle: document.getElementById('aboutTitle').value,
+                aboutDescription: document.getElementById('aboutDescription').value,
+                featuredDescription: document.getElementById('featuredDescription').value
+            };
+            
+            localStorage.setItem('homepageContent', JSON.stringify(homepageData));
+            alert('Homepage content updated successfully!');
+        }
+
+        function updateShopPage() {
+            const shopData = {
+                headerTitle: document.getElementById('shopHeaderTitle').value,
+                productsPerPage: document.getElementById('productsPerPage').value
+            };
+            
+            localStorage.setItem('shopPageContent', JSON.stringify(shopData));
+            alert('Shop page updated successfully!');
+        }
+
+        function updateSettings() {
+            const settingsData = {
+                websiteName: document.getElementById('websiteName').value,
+                deliveryTime: document.getElementById('deliveryTime').value,
+                currencySymbol: document.getElementById('currencySymbol').value,
+                contactEmail: document.getElementById('contactEmail').value
+            };
+            
+            localStorage.setItem('websiteSettings', JSON.stringify(settingsData));
+            alert('Settings updated successfully!');
+        }
+
+        // Banner & Hero Management
+        function saveBannerSettings() {
+            const bannerData = {
+                heroTitle: document.getElementById('heroTitle').value,
+                heroSubtitle: document.getElementById('heroSubtitle').value,
+                heroButtonText: document.getElementById('heroButtonText').value,
+                heroButtonLink: document.getElementById('heroButtonLink').value,
+                heroBackgroundImage: document.getElementById('heroBackgroundImage').value,
+                heroDescription: document.getElementById('heroDescription').value,
+                banner1: document.getElementById('banner1').value,
+                banner2: document.getElementById('banner2').value,
+                banner3: document.getElementById('banner3').value,
+                banner4: document.getElementById('banner4').value
+            };
+            
+            localStorage.setItem('adminBannerData', JSON.stringify(bannerData));
+            alert('Banner settings saved successfully!');
+        }
+
+        function loadBannerSettings() {
+            const bannerData = JSON.parse(localStorage.getItem('adminBannerData') || '{}');
+            
+            document.getElementById('heroTitle').value = bannerData.heroTitle || 'Welcome to RAW FADE';
+            document.getElementById('heroSubtitle').value = bannerData.heroSubtitle || 'Discover Premium Fashion';
+            document.getElementById('heroButtonText').value = bannerData.heroButtonText || 'Shop Now';
+            document.getElementById('heroButtonLink').value = bannerData.heroButtonLink || 'shop.html';
+            document.getElementById('heroBackgroundImage').value = bannerData.heroBackgroundImage || '';
+            document.getElementById('heroDescription').value = bannerData.heroDescription || 'Premium quality clothing for the modern lifestyle';
+            document.getElementById('banner1').value = bannerData.banner1 || '';
+            document.getElementById('banner2').value = bannerData.banner2 || '';
+            document.getElementById('banner3').value = bannerData.banner3 || '';
+            document.getElementById('banner4').value = bannerData.banner4 || '';
+        }
+
+        // Homepage Content Management
+        function saveHomepageContent() {
+            const homepageData = {
+                newArrivalsTitle: document.getElementById('newArrivalsTitle').value,
+                featuredTitle: document.getElementById('featuredTitle').value,
+                categoriesTitle: document.getElementById('categoriesTitle').value,
+                aboutTitle: document.getElementById('aboutTitle').value,
+                aboutDescription: document.getElementById('aboutDescription').value,
+                featuredDescription: document.getElementById('featuredDescription').value
+            };
+            
+            localStorage.setItem('adminHomepageData', JSON.stringify(homepageData));
+            alert('Homepage content saved successfully!');
+        }
+
+        function loadHomepageContent() {
+            const homepageData = JSON.parse(localStorage.getItem('adminHomepageData') || '{}');
+            
+            document.getElementById('newArrivalsTitle').value = homepageData.newArrivalsTitle || 'New Arrivals';
+            document.getElementById('featuredTitle').value = homepageData.featuredTitle || 'Featured Collection';
+            document.getElementById('categoriesTitle').value = homepageData.categoriesTitle || 'Shop by Category';
+            document.getElementById('aboutTitle').value = homepageData.aboutTitle || 'About RAW FADE';
+            document.getElementById('aboutDescription').value = homepageData.aboutDescription || 'We are committed to bringing you the finest quality clothing with modern designs and premium materials.';
+            document.getElementById('featuredDescription').value = homepageData.featuredDescription || 'Discover our handpicked collection of premium fashion items.';
+        }
+
+        // Shop Page Management
+        function saveShopPageSettings() {
+            const shopPageData = {
+                title: document.getElementById('shopPageTitle').value,
+                subtitle: document.getElementById('shopPageSubtitle').value,
+                productsPerPage: document.getElementById('productsPerPage').value,
+                defaultSortOrder: document.getElementById('defaultSortOrder').value,
+                description: document.getElementById('shopPageDescription').value
+            };
+            
+            localStorage.setItem('adminShopPageData', JSON.stringify(shopPageData));
+            alert('Shop page settings saved successfully!');
+        }
+
+        function loadShopPageSettings() {
+            const shopPageData = JSON.parse(localStorage.getItem('adminShopPageData') || '{}');
+            
+            document.getElementById('shopPageTitle').value = shopPageData.title || 'Shop All Products';
+            document.getElementById('shopPageSubtitle').value = shopPageData.subtitle || 'Discover our complete collection';
+            document.getElementById('productsPerPage').value = shopPageData.productsPerPage || '24';
+            document.getElementById('defaultSortOrder').value = shopPageData.defaultSortOrder || 'newest';
+            document.getElementById('shopPageDescription').value = shopPageData.description || 'Browse through our extensive collection of premium fashion items.';
+        }
+
+        // Categories Management
+        function loadCategoriesTable() {
+            const tbody = document.getElementById('categoriesTable');
+            if (!tbody) return;
+            
+            const categories = [
+                { id: 1, name: 'T-Shirts', slug: 'tshirts', products: 25, status: 'active', icon: '👕' },
+                { id: 2, name: 'Shirts', slug: 'shirts', products: 18, status: 'active', icon: '👔' },
+                { id: 3, name: 'Jeans', slug: 'jeans', products: 15, status: 'active', icon: '👖' },
+                { id: 4, name: 'Shorts', slug: 'shorts', products: 12, status: 'active', icon: '🩳' },
+                { id: 5, name: 'Jackets', slug: 'jackets', products: 8, status: 'active', icon: '🧥' }
+            ];
+            
+            tbody.innerHTML = '';
+            categories.forEach(category => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-size: 24px;">${category.icon}</td>
+                    <td>${category.name}</td>
+                    <td>${category.slug}</td>
+                    <td>${category.products}</td>
+                    <td><span class="status-badge ${category.status}">${category.status}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="editCategory(${category.id})" style="margin-right: 5px;">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteCategory(${category.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Brands Management
+        function loadBrandsTable() {
+            const tbody = document.getElementById('brandsTable');
+            if (!tbody) return;
+            
+            const brands = [
+                { id: 1, name: 'RAW FADE', products: 45, status: 'active', logo: '🏷️' },
+                { id: 2, name: 'Adidas', products: 12, status: 'active', logo: '👟' },
+                { id: 3, name: 'Nike', products: 8, status: 'active', logo: '✓' },
+                { id: 4, name: 'Puma', products: 6, status: 'active', logo: '🐾' },
+                { id: 5, name: 'Reebok', products: 4, status: 'inactive', logo: '⚡' }
+            ];
+            
+            tbody.innerHTML = '';
+            brands.forEach(brand => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-size: 24px;">${brand.logo}</td>
+                    <td>${brand.name}</td>
+                    <td>${brand.products}</td>
+                    <td><span class="status-badge ${brand.status}">${brand.status}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="editBrand(${brand.id})" style="margin-right: 5px;">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteBrand(${brand.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Category and brand management (placeholder functions)
+        function openCategoryModal() {
+            alert('Category management feature coming soon!');
+        }
+
+        function openBrandModal() {
+            alert('Brand management feature coming soon!');
+        }
+
+        function loadCategoriesTable() {
+            const tbody = document.getElementById('categoriesTable');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Category management coming soon!</td></tr>';
+        }
+
+        function loadBrandsTable() {
+            const tbody = document.getElementById('brandsTable');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Brand management coming soon!</td></tr>';
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('email');
+            window.location.href = 'login.html';
+        }
+
+        // Auto-refresh data every 30 seconds
+        setInterval(() => {
+            loadRealCartData();
+            loadOrdersTable();
+            updateDashboardStats();
+        }, 30000);
+
+        // Filter products function
+        function filterProducts(filter) {
+            const tbody = document.getElementById('productsTable');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            let filteredProducts = productData;
+            
+            if (filter === 'active') {
+                filteredProducts = productData.filter(product => product.status === 'active');
+            } else if (filter === 'inactive') {
+                filteredProducts = productData.filter(product => product.status === 'inactive');
+            } else if (filter === 'low-stock') {
+                filteredProducts = productData.filter(product => product.stock < 10);
+            }
+            
+            if (filteredProducts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No products found for this filter.</td></tr>';
+                return;
+            }
+            
+            filteredProducts.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><img src="${product.image}" alt="${product.name}" class="image-preview" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'"></td>
+                    <td>${product.name}</td>
+                    <td>${product.brand}</td>
+                    <td>${product.category}</td>
+                    <td>₹${product.price}</td>
+                    <td>${product.stock}</td>
+                    <td><span class="status-badge ${product.status}">${product.status}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="openProductModal(${product.id})" style="margin-right: 5px;">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Search products function
+        function searchProducts(searchTerm) {
+            const tbody = document.getElementById('productsTable');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            const filteredProducts = productData.filter(product => 
+                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.id.toString().includes(searchTerm)
+            );
+            
+            if (filteredProducts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No products found matching your search.</td></tr>';
+                return;
+            }
+            
+            filteredProducts.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><img src="${product.image}" alt="${product.name}" class="image-preview" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNS41IDQwLjVMMjUgNTFMMzUuNSA2MS41TDQ2IDUxTDM1LjUgNDAuNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'"></td>
+                    <td>${product.name}</td>
+                    <td>${product.brand}</td>
+                    <td>${product.category}</td>
+                    <td>₹${product.price}</td>
+                    <td>${product.stock}</td>
+                    <td><span class="status-badge ${product.status}">${product.status}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="openProductModal(${product.id})" style="margin-right: 5px;">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Website Settings Management
+        function saveWebsiteSettings() {
+            const settingsData = {
+                websiteName: document.getElementById('websiteName').value,
+                websiteTagline: document.getElementById('websiteTagline').value,
+                contactEmail: document.getElementById('contactEmail').value,
+                contactPhone: document.getElementById('contactPhone').value,
+                currencySymbol: document.getElementById('currencySymbol').value,
+                deliveryTime: document.getElementById('deliveryTime').value,
+                websiteAddress: document.getElementById('websiteAddress').value,
+                websiteDescription: document.getElementById('websiteDescription').value,
+                facebookUrl: document.getElementById('facebookUrl').value,
+                instagramUrl: document.getElementById('instagramUrl').value,
+                twitterUrl: document.getElementById('twitterUrl').value,
+                youtubeUrl: document.getElementById('youtubeUrl').value
+            };
+            
+            localStorage.setItem('adminWebsiteSettings', JSON.stringify(settingsData));
+            alert('Website settings saved successfully!');
+        }
+
+        function loadWebsiteSettings() {
+            const settingsData = JSON.parse(localStorage.getItem('adminWebsiteSettings') || '{}');
+            
+            document.getElementById('websiteName').value = settingsData.websiteName || 'RAW FADE';
+            document.getElementById('websiteTagline').value = settingsData.websiteTagline || 'Premium Fashion Store';
+            document.getElementById('contactEmail').value = settingsData.contactEmail || 'contact@rawfade.com';
+            document.getElementById('contactPhone').value = settingsData.contactPhone || '+1 (555) 123-4567';
+            document.getElementById('currencySymbol').value = settingsData.currencySymbol || '₹';
+            document.getElementById('deliveryTime').value = settingsData.deliveryTime || '5-7';
+            document.getElementById('websiteAddress').value = settingsData.websiteAddress || 'Fashion District, Style Street, City 12345';
+            document.getElementById('websiteDescription').value = settingsData.websiteDescription || 'RAW FADE is your destination for premium fashion and lifestyle products.';
+            document.getElementById('facebookUrl').value = settingsData.facebookUrl || '';
+            document.getElementById('instagramUrl').value = settingsData.instagramUrl || '';
+            document.getElementById('twitterUrl').value = settingsData.twitterUrl || '';
+            document.getElementById('youtubeUrl').value = settingsData.youtubeUrl || '';
+        }
+    </script>
+</body>
+</html>

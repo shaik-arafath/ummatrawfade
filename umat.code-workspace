@@ -1,0 +1,24 @@
+{ 
+   "folders": [
+     {
+       "path": "."
+     },
+     {
+       "path": "spring_backend"
+     }
+   ],
+   "settings": { 
+     "liveServer.settings.port": 5507, 
+     "java.compile.nullAnalysis.mode": "automatic", 
+     "java.configuration.updateBuildConfiguration": "automatic", 
+    "java.import.maven.enabled": true,
+    "liveServer.settings.multiRootWorkspaceName": "umat"
+   }, 
+   "extensions": { 
+     "recommendations": [ 
+       "vscjava.vscode-java-pack", 
+       "esbenp.prettier-vscode", 
+       "dbaeumer.vscode-eslint" 
+     ] 
+   } 
+ }

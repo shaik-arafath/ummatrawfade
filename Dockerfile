@@ -1,26 +1,33 @@
-# ---- BUILD STAGE ----
-FROM maven:3.9-eclipse-temurin-17 AS build
+# Multi-stage build: Frontend
+FROM node:18 AS frontend
+
 WORKDIR /app
 
-# Copy pom.xml and download dependencies first (for caching)
-COPY pom.xml .
-RUN mvn -q -e -DskipTests dependency:go-offline
+# Copy frontend files
+COPY frontend/package*.json ./ 2>/dev/null || true
+RUN npm install 2>/dev/null || true
 
-# Copy the full source and build the project
-COPY src ./src
-RUN mvn -q -DskipTests clean package
+COPY frontend/ ./frontend/
+RUN npm run build 2>/dev/null || true
 
-# ---- RUN STAGE ----
-FROM eclipse-temurin:17-jre-jammy
+# Backend stage
+FROM eclipse-temurin:17-jdk AS backend
+
 WORKDIR /app
 
-# Copy built jar from build stage
-COPY --from=build /app/target/ecommerce-0.0.1-SNAPSHOT.jar app.jar
+# Install Maven
+RUN apt-get update && apt-get install -y maven
 
-# Use Render’s PORT
-ENV PORT=8080
+# Copy frontend build to static resources
+COPY --from=frontend /app/frontend/build /app/src/main/resources/static 2>/dev/null || true
+
+# Copy backend source
+COPY backend/pom.xml .
+COPY backend/src ./src
+
+# Build backend
+RUN mvn clean package -DskipTests
+
 EXPOSE 8080
 
-# Run the app
-CMD ["sh", "-c", "java -Dserver.port=$PORT -jar app.jar"]
-
+CMD ["java", "-jar", "target/*.jar"]

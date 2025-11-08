@@ -316,103 +316,20 @@
         <div id="loginPrompt" class="login-prompt" style="display: none;"></div>
             </div>
 
+        <script src="auth.js"></script>
+        <script src="cart.js"></script>
         <script>
-        let cartItems = [];
-        let currentUser = null;
-        const API_BASE_URL = 'http://localhost:9090/api'; // Connect to the running backend server
-        
-        // Function to check if backend is available
-        async function isBackendAvailable() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/actuator/health`, { 
-                    method: 'GET',
-                    headers: currentUser?.token ? {
-                        'Authorization': `Bearer ${currentUser.token}`
-                    } : {}
-                });
-                return response.ok;
-            } catch (error) {
-                console.warn('Backend server not available:', error);
-                return false;
-            }
-        }
-
-        // Check authentication status
-        async function checkAuth() {
-            const token = localStorage.getItem('token');
-            const username = localStorage.getItem('username');
-            
+        // Initialize cart page
+        async function initCartPage() {
             // Always show cart content regardless of login status
             document.getElementById('cartContent').style.display = 'block';
             document.getElementById('loginPrompt').style.display = 'none';
-            
-            if (token && username) {
-                // User is logged in
-                currentUser = { username, token };
-                updateAuthLink();
-            }
-            
-            // Load cart from backend or local storage
-            await loadLocalCart();
-            return true;
-        }
 
-        // Update auth link
-        function updateAuthLink() {
-                const authLink = document.getElementById('authLink');
-            if (currentUser) {
-                authLink.textContent = `Welcome, ${currentUser.username}`;
-                    authLink.href = '#';
-                authLink.onclick = function() {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('username');
-                    window.location.reload();
-                    };
-                } else {
-                authLink.textContent = 'Login';
-                authLink.href = 'login.html';
-                authLink.onclick = null;
-            }
-        }
-
-        // Load cart from backend or local storage
-        async function loadLocalCart() {
-            try {
-                // Check if user is logged in and backend is available
-                if (currentUser && await isBackendAvailable()) {
-                    try {
-                        console.log('Attempting to load cart from backend');
-                        const response = await fetch(`${API_BASE_URL}/cart/user/${currentUser.username}`, {
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `Bearer ${currentUser.token}`
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const backendCart = await response.json();
-                            console.log('Successfully loaded cart from backend:', backendCart);
-                            displayCart(backendCart);
-                            return;
-                        } else {
-                            console.warn('Failed to load cart from backend, falling back to local storage');
-                        }
-                    } catch (backendError) {
-                        console.warn('Error loading cart from backend:', backendError);
-                    }
-                }
-                
-                // Fallback to local storage
-                console.log('Loading cart from local storage');
-                const localCart = JSON.parse(localStorage.getItem('localCart')) || { items: [] };
-                
-                if (localCart && localCart.items && localCart.items.length > 0) {
-                    displayCart(localCart);
-                } else {
-                    displayEmptyCart();
-                }
-            } catch (err) {
-                console.error('Error loading cart from local storage:', err);
+            // Load and display cart
+            const cart = await cartManager.loadCart();
+            if (cart && cart.items && cart.items.length > 0) {
+                displayCart(cart);
+            } else {
                 displayEmptyCart();
             }
         }
@@ -498,68 +415,19 @@
             `;
         }
 
-        // Update quantity
+        // Update quantity using cart manager
         function updateQuantity(productId, newQuantity) {
-            if (newQuantity < 1) {
-                alert('Quantity must be at least 1');
-                return;
-            }
-            
-            try {
-                // Get cart from local storage
-                let cart = JSON.parse(localStorage.getItem('localCart')) || { items: [] };
-                
-                // Find the item in the cart
-                const itemIndex = cart.items.findIndex(item => item.product.id === productId);
-                
-                if (itemIndex !== -1) {
-                    // Update quantity
-                    cart.items[itemIndex].quantity = newQuantity;
-                    
-                    // Save updated cart to local storage
-                    localStorage.setItem('localCart', JSON.stringify(cart));
-                    
-                    // Reload cart to display changes
-                    loadLocalCart();
-                } else {
-                    console.error('Product not found in cart');
-                    alert('Error: Product not found in cart');
-                }
-            } catch (err) {
-                console.error('Error updating quantity:', err);
-                alert('Error updating quantity: ' + err.message);
+            const success = cartManager.updateQuantity(productId, parseInt(newQuantity));
+            if (success) {
+                initCartPage(); // Reload cart display
             }
         }
-        
-        // Remove from cart
+
+        // Remove from cart using cart manager
         function removeFromCart(productId) {
-            if (!confirm('Are you sure you want to remove this item from your cart?')) {
-                return;
-            }
-            
-            try {
-                // Get cart from local storage
-                let cart = JSON.parse(localStorage.getItem('localCart')) || { items: [] };
-                
-                // Find the item in the cart
-                const itemIndex = cart.items.findIndex(item => item.product.id === productId);
-                
-                if (itemIndex !== -1) {
-                    // Remove the item from the cart
-                    cart.items.splice(itemIndex, 1);
-                    
-                    // Save updated cart to local storage
-                    localStorage.setItem('localCart', JSON.stringify(cart));
-                    
-                    // Reload cart to display changes
-                    loadLocalCart();
-                } else {
-                    console.error('Product not found in cart');
-                    alert('Error: Product not found in cart');
-                }
-            } catch (err) {
-                console.error('Error removing item from cart:', err);
-                alert('Error removing item from cart: ' + err.message);
+            const success = cartManager.removeFromCart(productId);
+            if (success) {
+                initCartPage(); // Reload cart display
             }
         }
 
@@ -572,8 +440,8 @@
             }
 
             try {
-                // Get cart from local storage
-                const cart = JSON.parse(localStorage.getItem('localCart')) || { items: [] };
+                // Get cart using cart manager
+                const cart = await cartManager.loadCart() || { items: [] };
                 
                 if (cart.items.length === 0) {
                     alert('Your cart is empty. Please add items before checkout.');
@@ -592,9 +460,10 @@
                 // Check if backend is available
                 const backendAvailable = await isBackendAvailable();
                 
-                if (backendAvailable) {
-                    console.log('Backend server is running, using server API for order');
-                    try {
+                try {
+                    if (backendAvailable) {
+                        console.log('Backend server is running, using server API for COD order');
+                        
                         // Create order on backend
                         const orderResponse = await fetch(`${API_BASE_URL}/orders/create`, {
                             method: 'POST',
@@ -606,98 +475,95 @@
                                 userId: currentUser.username,
                                 items: cart.items,
                                 totalAmount: totalAmount,
-                                paymentMethod: paymentMethod === 'razorpay' ? 'RAZORPAY' : 'COD'
+                                paymentMethod: 'RAZORPAY'
                             })
                         });
                         
                         if (orderResponse.ok) {
                             const orderData = await orderResponse.json();
                             
-                            if (paymentMethod === 'razorpay') {
-                                // Create a Razorpay order
-                                const options = {
-                                    key: 'rzp_test_rFUCa9ROD1UuBY', // Your Razorpay test key
-                                    amount: Math.round(totalAmount * 100),
-                                    currency: 'INR',
-                                    name: 'Krishna Creations',
-                                    description: 'E-commerce Purchase',
-                                    order_id: orderData.id,
-                                    handler: function(response) {
-                                        verifyPaymentAndCreateOrder(response, totalAmount);
-                                    },
-                                    prefill: {
-                                        name: currentUser.username,
-                                        email: `${currentUser.username}@example.com`
-                                    },
-                                    theme: {
-                                        color: '#3399cc'
-                                    }
-                                };
-                                
-                                const rzp = new Razorpay(options);
-                                rzp.open();
-                            } else {
-                                // Cash on Delivery - order already created on backend
-                                alert('Order placed successfully! Order ID: ' + orderData.id);
-                                clearCart();
-                                window.location.href = 'index.html';
-                            }
-                        } else {
-                            throw new Error('Failed to create order on server');
+                            // Create a Razorpay order
+                            const options = {
+                                key: 'rzp_test_rFUCa9ROD1UuBY', // Your Razorpay test key
+                                amount: Math.round(totalAmount * 100),
+                                currency: 'INR',
+                                name: 'Krishna Creations',
+                                description: 'E-commerce Purchase',
+                                order_id: orderData.id,
+                                handler: function(response) {
+                                    verifyPaymentAndCreateOrder(response, totalAmount);
+                                },
+                                prefill: {
+                                    name: currentUser.username,
+                                    email: `${currentUser.username}@example.com`
+                                },
+                                theme: {
+                                    color: '#3399cc'
+                                }
+                            };
+                            
+                            const rzp = new Razorpay(options);
+                            try { 
+                                rzp.open(); 
+                            } catch (error) { 
+                                console.error('Error creating Razorpay order:', error); 
+                                alert('Error creating order: ' + error.message); 
+                            } 
+                        } else { 
+                            throw new Error('Failed to create order on server'); 
                         }
-                    } catch (error) {
-                        console.error('Error creating order:', error);
-                        alert('Error creating order: ' + error.message);
-                    }
-                } else {
-                    console.warn('Backend server not available, using local fallback');
+                    } else { 
+                        console.warn('Backend health check failed'); 
+                    } 
+                } catch (error) { 
+                    console.warn('Backend server not available, using local fallback:', error); 
                     
-                    // Fallback to local implementation
-                    if (paymentMethod === 'razorpay') {
-                        // Create a simple order object for Razorpay
-                        const options = {
-                            key: 'rzp_test_rFUCa9ROD1UuBY', // Your Razorpay test key
-                            amount: Math.round(totalAmount * 100),
-                            currency: 'INR',
-                            name: 'Krishna Creations',
-                            description: 'E-commerce Purchase',
-                            handler: function(response) {
-                                alert('Payment successful! Order ID: ' + response.razorpay_payment_id);
-                                clearCart();
-                                window.location.href = 'index.html';
-                            },
-                            prefill: {
-                                name: currentUser.username,
-                                email: `${currentUser.username}@example.com`
-                            },
-                            theme: {
-                                color: '#3399cc'
-                            }
-                        };
+                    // Fallback to local implementation 
+                    if (paymentMethod === 'razorpay') { 
+                        // Create a simple order object for Razorpay 
+                        const options = { 
+                            key: 'rzp_test_rFUCa9ROD1UuBY', // Your Razorpay test key 
+                            amount: Math.round(totalAmount * 100), 
+                            currency: 'INR', 
+                            name: 'Krishna Creations', 
+                            description: 'E-commerce Purchase', 
+                            handler: function(response) { 
+                                alert('Payment successful! Order ID: ' + response.razorpay_payment_id); 
+                                clearCart(); 
+                                window.location.href = 'index.html'; 
+                            }, 
+                            prefill: { 
+                                name: currentUser.username, 
+                                email: `${currentUser.username}@example.com` 
+                            }, 
+                            theme: { 
+                                color: '#3399cc' 
+                            } 
+                        }; 
                         
-                        const rzp = new Razorpay(options);
-                        rzp.open();
-                    } else {
-                        // Cash on Delivery
-                        try {
-                            createCODOrder(totalAmount);
-                        } catch (err) {
-                            console.error('Error with COD order:', err);
-                            alert('Error with Cash on Delivery: ' + err.message);
-                        }
-                    }
+                        const rzp = new Razorpay(options); 
+                        rzp.open(); 
+                    } else { 
+                        // Cash on Delivery 
+                        try { 
+                            createCODOrder(totalAmount); 
+                        } catch (err) { 
+                            console.error('Error with COD order:', err); 
+                            alert('Error with Cash on Delivery: ' + err.message); 
+                        } 
+                    } 
                 }
-            } catch (error) {
-                console.error('Error during checkout:', error);
-                alert('Error during checkout: ' + error.message);
+            } catch (err) {
+                console.error('Error during checkout:', err);
+                alert('Error during checkout: ' + err.message);
             }
         }
 
         // Verify payment and create order
-        function verifyPaymentAndCreateOrder(paymentResponse, totalAmount) {
+        async function verifyPaymentAndCreateOrder(paymentResponse, totalAmount) {
             try {
-                // Get cart from local storage
-                const cart = JSON.parse(localStorage.getItem('localCart')) || { items: [] };
+                // Get cart using cart manager
+                const cart = await cartManager.loadCart() || { items: [] };
                 
                 // Create a simple order object and store it in localStorage
                 const order = {
@@ -737,12 +603,12 @@
                     window.location.href = 'login.html';
                     return;
                 }
-                
+
                 const shippingAddress = prompt('Please enter your shipping address:');
                 if (!shippingAddress) return;
-                
-                // Get cart from local storage
-                const cart = JSON.parse(localStorage.getItem('localCart')) || { items: [] };
+
+                // Get cart using cart manager
+                const cart = await cartManager.loadCart() || { items: [] };
                 
                 // Check if backend is available
                 const backendAvailable = await isBackendAvailable();
@@ -770,7 +636,7 @@
                             const orderData = await orderResponse.json();
                             
                             // Show success message
-                            alert('COD order placed successfully! Order ID: ' + orderData.id);
+                            alert('COD order placed successfully! Order ID: ' + orderData.orderNumber);
                             
                             // Clear cart and redirect to home
                             clearCart();
@@ -824,45 +690,38 @@
             window.location.href = 'index.html';
         }
 
-        // Clear cart
+        // Clear cart using cart manager
         function clearCart() {
-            if (!confirm('Are you sure you want to clear your cart? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                // Create empty cart
-                const emptyCart = { items: [] };
-                
-                // Save empty cart to local storage
-                localStorage.setItem('localCart', JSON.stringify(emptyCart));
-                
-                // Reload cart to display changes
-                loadLocalCart();
-                
-                alert('Cart cleared successfully!');
-            } catch (err) {
-                console.error('Error clearing cart:', err);
-                alert('Error clearing cart: ' + err.message);
+            const success = cartManager.clearCart();
+            if (success) {
+                initCartPage(); // Reload cart display
             }
         }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+            initCartPage();
         });
-        </script>
 
-        <section id="newsletter" class="section-p1 section-m1">
-            <div class="newstext">
-                <h4>Sign Up For Newsletter</h4>
-                <p>Get E-mail updates about our latest shop and special offers</p>
-            </div>
-            <div class="newsletter-form">
-                <input type="email" placeholder="Your email address">
-                <button>Sign Up</button>
-            </div>
-        </section>
+        // Define isBackendAvailable function
+        async function isBackendAvailable() {
+            try {
+                const response = await fetch('http://localhost:8080/api/actuator/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                return response.ok;
+            } catch (error) {
+                console.warn('Backend health check failed:', error);
+                return false;
+            }
+        }
+
+        // Define API_BASE_URL
+        const API_BASE_URL = 'http://localhost:8080/api';
+        </script>
 
         <footer class="section-p1">
             <div class="col">
@@ -914,5 +773,15 @@
                 <img src="img/pay/pay.png" alt="">
             </div>
         </footer>
+        <section id="newsletter" class="section-p1 section-m1" style="background: var(--panel); color: var(--text); padding: 40px 20px; margin: 40px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+            <div class="newstext" style="flex: 1; min-width: 300px;">
+                <h4 style="color: var(--text); font-size: 24px; margin-bottom: 10px;">Sign Up For Newsletters</h4>
+                <p style="color: var(--muted); font-size: 16px;">Get E-mail updates about our latest shop and <span style="color: var(--accent);">special offers.</span></p>
+            </div>
+            <div class="form" style="flex: 1; min-width: 300px; display: flex; margin-top: 20px;">
+                <input type="text" placeholder="Your email address" id="signUp" style="width: 100%; padding: 12px 15px; border-radius: 5px 0 0 5px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+                <button class="normal" style="padding: 12px 20px; background: var(--accent); color: var(--bg); border: none; border-radius: 0 5px 5px 0; font-weight: bold; cursor: pointer;">Sign Up</button>
+            </div>
+        </section>
     </body>
 </html>
