@@ -1,0 +1,25 @@
+[Unit]
+Description=UMAT Backend Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/umat/spring_backend
+ExecStart=/usr/bin/java -jar target/spring_backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=DB_USERNAME=your_db_username
+Environment=DB_PASSWORD=your_db_password
+Environment=JWT_SECRET=your_jwt_secret_key_change_in_production
+
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
